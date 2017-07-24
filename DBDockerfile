@@ -1,0 +1,16 @@
+FROM ubuntu:14.04
+
+# mysql username: root
+# mysql password: rootpass
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+RUN [ "/bin/bash", "-c","apt-get update && debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password password rootpass' && debconf-set-selections <<< 'mysql-server-5.5 mysql-server/root_password_again password rootpass'"]
+
+RUN sudo apt-get install -y mysql-server php5-mysql && \
+	sed -i "s/bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" "/etc/mysql/my.cnf" &&\
+	sudo service mysql restart && mysql -uroot -p'rootpass' -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'rootpass' WITH GRANT OPTION; FLUSH PRIVILEGES;" &&\
+	mysql -uroot -p'rootpass' -e "DROP DATABASE IF EXISTS formresponses; CREATE DATABASE formresponses; USE formresponses; CREATE TABLE response (id INT NOT NULL PRIMARY KEY AUTO_INCREMENT, firstname VARCHAR(20), lastname VARCHAR(20), email VARCHAR(50), submitdate DATETIME);"
+# Allow root access from any host
+###RUN echo "GRANT PROXY ON ''@'' TO 'root'@'%' WITH GRANT OPTION" | mysql -u root --password=rootpass
+
+EXPOSE 3306
+WORKDIR /
